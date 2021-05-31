@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import "./App.css";
 import Webcam from "react-webcam";
 import "@tensorflow/tfjs-core";
@@ -6,10 +6,14 @@ import "@tensorflow/tfjs-converter";
 import "@tensorflow/tfjs-backend-webgl";
 import * as faceLandmarksDetection from "@tensorflow-models/face-landmarks-detection";
 import { MediaPipeFaceMesh } from "@tensorflow-models/face-landmarks-detection/dist/types";
-import { drawPoints } from "./drowPoints";
+import { drawPoints } from "./DrawPoints";
 import useMedia from "use-media";
+import { AnalyzeSwitch } from "./components/AnalyzeSwitch";
 
 const App: React.FC = () => {
+
+  const [isAnalyzed, setIsAnalyzed] = useState(false);
+
   // Setup references
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -75,9 +79,11 @@ const App: React.FC = () => {
   return (
     <div className="App">
       <header className="App-header">
-        {/* <div className="title">Face Landmark points Detection</div> */}
         <Webcam audio={false} ref={webcamRef} style={screenStyle} />
         <canvas ref={canvasRef} style={screenStyle} />
+        <AnalyzeSwitch 
+        isOn={isAnalyzed}
+        handleChange={() => setIsAnalyzed(!isAnalyzed)} />
       </header>
     </div>
   );

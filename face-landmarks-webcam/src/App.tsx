@@ -6,29 +6,34 @@ import "@tensorflow/tfjs-converter";
 import "@tensorflow/tfjs-backend-webgl";
 import * as faceLandmarksDetection from "@tensorflow-models/face-landmarks-detection";
 import { MediaPipeFaceMesh } from "@tensorflow-models/face-landmarks-detection/dist/types";
-import { drawPoints} from "./drowPoints";
-
-
+import { drawPoints } from "./drowPoints";
+import useMedia from "use-media";
 
 const App: React.FC = () => {
   // Setup references
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isPC = useMedia({ minWidth: "767px" });
 
   // Load Facemesh
   const runFacemesh = async () => {
     const net = await faceLandmarksDetection.load(
       faceLandmarksDetection.SupportedPackages.mediapipeFacemesh
     );
-      setInterval(() => {
-        detectFaceLandmarks(net);
-      }, 100);
-
+    setInterval(() => {
+      detectFaceLandmarks(net);
+    }, 100);
   };
 
   const detectFaceLandmarks = async (net: MediaPipeFaceMesh) => {
     // readyState = 4 is HAVE_ENOUGH_DATA
-    if(typeof webcamRef.current !== "undefined" && webcamRef.current !== null && webcamRef.current.video?.readyState === 4 && typeof canvasRef.current !== "undefined" && canvasRef.current !== null) {
+    if (
+      typeof webcamRef.current !== "undefined" &&
+      webcamRef.current !== null &&
+      webcamRef.current.video?.readyState === 4 &&
+      typeof canvasRef.current !== "undefined" &&
+      canvasRef.current !== null
+    ) {
       // Get video properties
       const video = webcamRef.current.video;
       const videoWidth = webcamRef.current.video.videoWidth;
@@ -48,7 +53,6 @@ const App: React.FC = () => {
       // Get canvas context for drawing
       const ctx = canvasRef.current.getContext("2d")!;
       drawPoints(face, ctx);
-
     } else {
       return;
     }
@@ -64,14 +68,14 @@ const App: React.FC = () => {
     right: 0,
     textAlign: "center",
     zIndex: 9,
-    width: 640,
-    height: 480,
+    width: isPC ? 640 : 256,
+    height: isPC ? 480 : 341,
   };
 
   return (
     <div className="App">
       <header className="App-header">
-        <div className="title">Face Landmark points Detection</div>
+        {/* <div className="title">Face Landmark points Detection</div> */}
         <Webcam audio={false} ref={webcamRef} style={screenStyle} />
         <canvas ref={canvasRef} style={screenStyle} />
       </header>
@@ -80,4 +84,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-

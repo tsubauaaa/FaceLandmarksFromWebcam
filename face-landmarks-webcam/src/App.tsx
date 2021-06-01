@@ -9,9 +9,9 @@ import { MediaPipeFaceMesh } from "@tensorflow-models/face-landmarks-detection/d
 import { drawPoints } from "./DrawPoints";
 import useMedia from "use-media";
 import { AnalyzeSwitch } from "./components/AnalyzeSwitch";
+import { Grid, Box } from "@material-ui/core";
 
 const App: React.FC = () => {
-
   const [isAnalyzed, setIsAnalyzed] = useState(false);
 
   // Setup references
@@ -78,13 +78,12 @@ const App: React.FC = () => {
 
   return (
     <div className="App">
-      <header className="App-header">
-        <Webcam audio={false} ref={webcamRef} style={screenStyle} />
-        <canvas ref={canvasRef} style={screenStyle} />
-        <AnalyzeSwitch 
+      <Webcam audio={false} ref={webcamRef} style={screenStyle} />
+      <canvas ref={canvasRef} style={screenStyle} />
+      <AnalyzeSwitch
         isOn={isAnalyzed}
-        handleChange={() => setIsAnalyzed(!isAnalyzed)} />
-      </header>
+        handleChange={() => setIsAnalyzed(!isAnalyzed)}
+      />
     </div>
   );
 };

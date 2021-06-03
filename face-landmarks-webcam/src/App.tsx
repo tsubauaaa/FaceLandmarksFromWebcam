@@ -78,12 +78,14 @@ const App: React.FC = () => {
 
   return (
     <div className="App">
-      <Webcam audio={false} ref={webcamRef} style={screenStyle} />
-      <canvas ref={canvasRef} style={screenStyle} />
-      <AnalyzeSwitch
-        isOn={isAnalyzed}
-        handleChange={() => setIsAnalyzed(!isAnalyzed)}
-      />
+      <header className="App-header">
+        <Webcam audio={false} ref={webcamRef} style={screenStyle} />
+        <canvas ref={canvasRef} style={screenStyle} />
+        <AnalyzeSwitch
+          isOn={isAnalyzed}
+          handleChange={() => setIsAnalyzed(!isAnalyzed)}
+        />
+      </header>
     </div>
   );
 };

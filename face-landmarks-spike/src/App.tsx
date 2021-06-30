@@ -4,7 +4,7 @@ import FaceLandmarks from "./components/FaceLandmarks";
 
 const App: React.FC = () => {
   return (
-    <div className="App">
+    <div>
       <FaceLandmarks />
     </div>
   );

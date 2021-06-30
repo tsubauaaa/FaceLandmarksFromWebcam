@@ -10,6 +10,7 @@ import {
   MediaPipeFaceMesh,
 } from "@tensorflow-models/face-landmarks-detection/dist/mediapipe-facemesh";
 import { Grid } from "@material-ui/core";
+import styles from "./FaceLandmarks.module.css";
 
 const FaceLandmarks: React.FC = () => {
   const webcamRef = useRef<Webcam>(null);
@@ -29,7 +30,7 @@ const FaceLandmarks: React.FC = () => {
   useEffect(() => {
     if (
       !webcamRef ||
-      !canvasRef ||
+      !canvasRef.current ||
       !landmarks ||
       webcamRef.current?.video?.readyState !== 4
     )
@@ -39,8 +40,8 @@ const FaceLandmarks: React.FC = () => {
     video.width = video.videoWidth;
     video.height = video.videoHeight;
 
-    canvasRef.current!.width = video.videoWidth;
-    canvasRef.current!.height = video.videoHeight;
+    canvasRef.current.width = video.videoWidth;
+    canvasRef.current.height = video.videoHeight;
 
     const ctx = canvasRef.current!.getContext("2d")!;
     drawLandmarks(landmarks, ctx);
@@ -56,9 +57,10 @@ const FaceLandmarks: React.FC = () => {
         for (let i = 0; i < keypoints.length; i++) {
           const x = keypoints[i][0];
           const y = keypoints[i][1];
-          ctx?.beginPath();
-          ctx?.arc(x, y, 1, 0, 3 * Math.PI);
-          ctx?.fill();
+          ctx.beginPath();
+          ctx.arc(x, y, 1, 0, 3 * Math.PI);
+          ctx.fillStyle = "aqua";
+          ctx.fill();
         }
       });
     }
@@ -76,7 +78,7 @@ const FaceLandmarks: React.FC = () => {
       .then((landmarks) => setLandmarks(landmarks));
   }, [model]);
 
-  const start = useCallback(() => {
+  const startAnalyzing = useCallback(() => {
     if (!timerId) {
       clearTimeout(timerId!);
     }
@@ -87,25 +89,35 @@ const FaceLandmarks: React.FC = () => {
     );
   }, [estimate, timerId]);
 
-  const stop = useCallback(() => {
+  const stopAnalyzing = useCallback(() => {
     if (!timerId) return;
     clearInterval(timerId);
     setTimerId(null);
   }, [timerId]);
 
   return (
-    <div>
-      <Grid container justify="center" direction="column">
+    <>
+      <Grid container direction="column" justify="center" alignItems="center">
         <Grid item>
-          <Webcam audio={false} ref={webcamRef} />
-          {timerId && <canvas ref={canvasRef} />}
+          <Webcam className={styles.webcam} audio={false} ref={webcamRef} />
+          {timerId && <canvas className={styles.canvas} ref={canvasRef} />}
         </Grid>
-        <Grid item>
-          <button onClick={start}>開始</button>
-          <button onClick={stop}>停止</button>
+        <Grid
+          className={styles.button_start}
+          item
+          spacing={2}
+          container
+          justify="center"
+        >
+          <Grid item className={styles.button}>
+            <button onClick={startAnalyzing}>開始</button>
+          </Grid>
+          <Grid item className={styles.button_stop}>
+            <button onClick={stopAnalyzing}>停止</button>
+          </Grid>
         </Grid>
       </Grid>
-    </div>
+    </>
   );
 };
 

@@ -77,7 +77,6 @@ const FaceLandmarks: React.FC = () => {
   }, [model]);
 
   const start = useCallback(() => {
-    console.log("開始");
     if (!timerId) {
       clearTimeout(timerId!);
     }
@@ -89,7 +88,6 @@ const FaceLandmarks: React.FC = () => {
   }, [estimate, timerId]);
 
   const stop = useCallback(() => {
-    console.log("停止");
     if (!timerId) return;
     clearInterval(timerId);
     setTimerId(null);

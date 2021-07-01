@@ -11,15 +11,17 @@ import {
 } from "@tensorflow-models/face-landmarks-detection/dist/mediapipe-facemesh";
 import { Grid } from "@material-ui/core";
 import styles from "./FaceLandmarks.module.css";
+import firebase from "firebase/app";
+import { db } from "../firebase";
 
 const FaceLandmarks: React.FC = () => {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [model, setModel] = useState<MediaPipeFaceMesh | null>(null);
-  const [landmarks, setLandmarks] = useState<AnnotatedPrediction[] | null>(
-    null
-  );
-  const [timerId, setTimerId] = useState<NodeJS.Timeout | null>(null);
+  const [preds, setPreds] = useState<AnnotatedPrediction[] | null>(null);
+  const [analyzingTimerId, setAnalyzingTimerId] =
+    useState<NodeJS.Timeout | null>(null);
+  const [storeTimerId, setStoreTimerId] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     faceLandmarksDetection
@@ -31,7 +33,7 @@ const FaceLandmarks: React.FC = () => {
     if (
       !webcamRef ||
       !canvasRef.current ||
-      !landmarks ||
+      !preds ||
       webcamRef.current?.video?.readyState !== 4
     )
       return;
@@ -44,16 +46,10 @@ const FaceLandmarks: React.FC = () => {
     canvasRef.current.height = video.videoHeight;
 
     const ctx = canvasRef.current!.getContext("2d")!;
-    drawLandmarks(landmarks, ctx);
-  }, [landmarks]);
 
-  const drawLandmarks = (
-    landmarks: AnnotatedPrediction[],
-    ctx: CanvasRenderingContext2D
-  ) => {
-    if (landmarks[0]) {
-      landmarks.forEach((landmark) => {
-        const keypoints = landmark.scaledMesh as Coords3D;
+    if (preds[0]) {
+      preds.forEach((pred) => {
+        const keypoints = pred.scaledMesh as Coords3D;
         for (let i = 0; i < keypoints.length; i++) {
           const x = keypoints[i][0];
           const y = keypoints[i][1];
@@ -64,7 +60,13 @@ const FaceLandmarks: React.FC = () => {
         }
       });
     }
-  };
+    return () => {
+      if (analyzingTimerId && storeTimerId) {
+        clearInterval(analyzingTimerId);
+        clearInterval(storeTimerId);
+      }
+    };
+  }, [preds, analyzingTimerId, storeTimerId]);
 
   const estimate = useCallback(() => {
     if (!webcamRef || !model || webcamRef.current?.video?.readyState !== 4)
@@ -75,32 +77,49 @@ const FaceLandmarks: React.FC = () => {
       .estimateFaces({
         input: video,
       })
-      .then((landmarks) => setLandmarks(landmarks));
+      .then((p) => setPreds(p));
   }, [model]);
 
+  const store = useCallback(() => {
+    console.log(preds);
+    // db.collection("landmarks").add({
+    //   timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    //   landmarks: landmarks,
+    // });
+  }, [preds]);
+
   const startAnalyzing = useCallback(() => {
-    if (!timerId) {
-      clearTimeout(timerId!);
+    if (!analyzingTimerId || !storeTimerId) {
+      clearTimeout(analyzingTimerId!);
     }
-    setTimerId(
+    setAnalyzingTimerId(
       setInterval(() => {
         estimate();
       }, 100)
     );
-  }, [estimate, timerId]);
+    setStoreTimerId(
+      setInterval(() => {
+        store();
+      }, 5000)
+    );
+  }, [estimate, analyzingTimerId, store, storeTimerId]);
 
   const stopAnalyzing = useCallback(() => {
-    if (!timerId) return;
-    clearInterval(timerId);
-    setTimerId(null);
-  }, [timerId]);
+    if (!analyzingTimerId || !storeTimerId) return;
+    clearInterval(analyzingTimerId);
+    clearInterval(storeTimerId);
+    setAnalyzingTimerId(null);
+    setStoreTimerId(null);
+  }, [analyzingTimerId, storeTimerId]);
 
   return (
     <>
       <Grid container direction="column" justify="center" alignItems="center">
         <Grid item>
           <Webcam className={styles.webcam} audio={false} ref={webcamRef} />
-          {timerId && <canvas className={styles.canvas} ref={canvasRef} />}
+          {analyzingTimerId && (
+            <canvas className={styles.canvas} ref={canvasRef} />
+          )}
         </Grid>
         <Grid
           className={styles.button_start}

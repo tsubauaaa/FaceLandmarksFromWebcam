@@ -4,7 +4,10 @@ import "@tensorflow/tfjs-core";
 import "@tensorflow/tfjs-converter";
 import "@tensorflow/tfjs-backend-webgl";
 import * as faceLandmarksDetection from "@tensorflow-models/face-landmarks-detection";
-import { Coords3D } from "@tensorflow-models/face-landmarks-detection/dist/mediapipe-facemesh/util";
+import {
+  Coord3D,
+  Coords3D,
+} from "@tensorflow-models/face-landmarks-detection/dist/mediapipe-facemesh/util";
 import {
   AnnotatedPrediction,
   MediaPipeFaceMesh,
@@ -14,6 +17,11 @@ import styles from "./FaceLandmarks.module.css";
 import firebase from "firebase/app";
 import { db } from "../firebase";
 
+interface StoreKeypoints {
+  id: number;
+  keypoints: { x: number; y: number; z: number };
+}
+
 const FaceLandmarks: React.FC = () => {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -21,7 +29,6 @@ const FaceLandmarks: React.FC = () => {
   const [preds, setPreds] = useState<AnnotatedPrediction[] | null>(null);
   const [analyzingTimerId, setAnalyzingTimerId] =
     useState<NodeJS.Timeout | null>(null);
-  const [storeTimerId, setStoreTimerId] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     faceLandmarksDetection
@@ -50,14 +57,27 @@ const FaceLandmarks: React.FC = () => {
     if (preds[0]) {
       preds.forEach((pred) => {
         const keypoints = pred.scaledMesh as Coords3D;
+        let storeKeypoints = {} as any;
         for (let i = 0; i < keypoints.length; i++) {
           const x = keypoints[i][0];
           const y = keypoints[i][1];
+          const z = keypoints[i][2];
+          storeKeypoints[i] = {
+            x: x,
+            y: y,
+            z: z,
+          };
           ctx.beginPath();
           ctx.arc(x, y, 1, 0, 3 * Math.PI);
           ctx.fillStyle = "aqua";
           ctx.fill();
         }
+        db.collection("landmarks").add({
+          timestamp: firebase.firestore.Timestamp.fromDate(
+            new Date()
+          ).toMillis(),
+          landmarks: storeKeypoints,
+        });
       });
     }
   }, [preds]);
@@ -74,15 +94,8 @@ const FaceLandmarks: React.FC = () => {
       .then((p) => setPreds(p));
   }, [model]);
 
-  const store = useCallback(() => {
-    // db.collection("landmarks").add({
-    //   timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-    //   landmarks: landmarks,
-    // });
-  }, [preds]);
-
   const startAnalyzing = useCallback(() => {
-    if (!analyzingTimerId || !storeTimerId) {
+    if (analyzingTimerId) {
       clearTimeout(analyzingTimerId!);
     }
     setAnalyzingTimerId(
@@ -90,20 +103,12 @@ const FaceLandmarks: React.FC = () => {
         estimate();
       }, 100)
     );
-    setStoreTimerId(
-      setInterval(() => {
-        store();
-      }, 5000)
-    );
-  }, [estimate, analyzingTimerId, store, storeTimerId]);
+  }, [estimate, analyzingTimerId]);
 
   const stopAnalyzing = useCallback(() => {
-    if (!analyzingTimerId || !storeTimerId) return;
-    clearInterval(analyzingTimerId);
-    clearInterval(storeTimerId);
+    clearInterval(analyzingTimerId!);
     setAnalyzingTimerId(null);
-    setStoreTimerId(null);
-  }, [analyzingTimerId, storeTimerId]);
+  }, [analyzingTimerId]);
 
   return (
     <>

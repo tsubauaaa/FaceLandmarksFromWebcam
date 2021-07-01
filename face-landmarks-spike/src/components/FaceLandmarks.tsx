@@ -60,13 +60,7 @@ const FaceLandmarks: React.FC = () => {
         }
       });
     }
-    return () => {
-      if (analyzingTimerId && storeTimerId) {
-        clearInterval(analyzingTimerId);
-        clearInterval(storeTimerId);
-      }
-    };
-  }, [preds, analyzingTimerId, storeTimerId]);
+  }, [preds]);
 
   const estimate = useCallback(() => {
     if (!webcamRef || !model || webcamRef.current?.video?.readyState !== 4)
@@ -81,7 +75,6 @@ const FaceLandmarks: React.FC = () => {
   }, [model]);
 
   const store = useCallback(() => {
-    console.log(preds);
     // db.collection("landmarks").add({
     //   timestamp: firebase.firestore.FieldValue.serverTimestamp(),
     //   landmarks: landmarks,
